@@ -168,7 +168,10 @@ async function command(
 export async function execute(interaction: ChatInputCommandInteraction) {
   const rconPassword = process.env.RCON_PASSWORD || "";
   const rcon = await Rcon.connect({
-      host: "localhost", port: 25575, password: rconPassword,
+      host: "localhost", 
+      port: 25575, 
+      password: rconPassword,
+      timeout: 30000,
   });
   
   if (!rcon.authenticated) {
