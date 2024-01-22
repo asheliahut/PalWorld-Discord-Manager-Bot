@@ -174,8 +174,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       password: rconPassword,
       timeout: rconTimeout,
   });
-
-  rcon.
   
   if (!rcon.authenticated) {
     await interaction.reply("RCON is not connected to the server.");
