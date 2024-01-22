@@ -1,8 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import { Rcon } from "rcon-client";
 
-const PREFIX_FOR_COMMANDS = "/";
-
 export const data = new SlashCommandBuilder()
   .setName("rcon")
   .setDescription("Send RCON Commands to Palworld Server")
@@ -72,7 +70,7 @@ async function shutdown(
 ) {
   await interaction.deferReply();
   const rconSent = await rconClient.send(
-    `${PREFIX_FOR_COMMANDS}Shutdown ${seconds} "${reason}"`,
+    `Shutdown ${seconds} "${reason}"`,
   );
   if (!rconSent) {
     await interaction.editReply("Failed to shutdown server.");
@@ -88,7 +86,7 @@ async function kill(
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send("${PREFIX_FOR_COMMANDS}DoExit");
+  const rconSent = await rconClient.send("DoExit");
   if (!rconSent) {
     await interaction.editReply("Failed to kill server.");
     return;
@@ -103,7 +101,7 @@ async function broadcast(
 ) {
   await interaction.deferReply();
   const rconSent = await rconClient.send(
-    `${PREFIX_FOR_COMMANDS}Broadcast "${message}"`,
+    `Broadcast "${message}"`,
   );
   if (!rconSent) {
     await interaction.editReply("Failed to broadcast message.");
@@ -117,7 +115,7 @@ async function save(
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(`${PREFIX_FOR_COMMANDS}Save`);
+  const rconSent = await rconClient.send(`Save`);
   if (!rconSent) {
     await interaction.editReply("Failed to save server.");
     return;
@@ -130,7 +128,7 @@ async function info(
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(`${PREFIX_FOR_COMMANDS}Info`);
+  const rconSent = await rconClient.send(`Info`);
   if (!rconSent) {
     await interaction.editReply("Failed to get server info.");
     return;
@@ -143,7 +141,7 @@ async function showPlayers(
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(`${PREFIX_FOR_COMMANDS}ShowPlayers`);
+  const rconSent = await rconClient.send(`ShowPlayers`);
   if (!rconSent) {
     await interaction.editReply("Failed to get players.");
     return;
@@ -166,13 +164,18 @@ async function command(
 }
 
 export async function execute(interaction: ChatInputCommandInteraction) {
+  const rconHost = process.env.RCON_HOST || "localhost";
+  const rconPort = parseInt(process.env.RCON_PORT || "25575");
   const rconPassword = process.env.RCON_PASSWORD || "";
+  const rconTimeout = parseInt(process.env.RCON_TIMEOUT || "2000");
   const rcon = await Rcon.connect({
-      host: "localhost", 
-      port: 25575, 
+      host: rconHost,
+      port: rconPort, 
       password: rconPassword,
-      timeout: 30000,
+      timeout: rconTimeout,
   });
+
+  rcon.
   
   if (!rcon.authenticated) {
     await interaction.reply("RCON is not connected to the server.");
