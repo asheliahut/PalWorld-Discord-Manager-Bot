@@ -1,0 +1,21 @@
+{
+  "name": "pal-discord-bot",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.ts",
+    "build": "bun build ./index.ts --compile --outfile palbot",
+    "fmt": "prettier --write ."
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "prettier": "^3.2.4"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "rcon-client": "^4.2.4"
+  }
+}
