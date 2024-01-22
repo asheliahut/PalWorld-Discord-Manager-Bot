@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
-import { Rcon } from "rcon-client";
+import { RconClient } from "@pashagames/tsrcon/dist/src/RconClient";
 
 export const data = new SlashCommandBuilder()
   .setName("rcon")
@@ -63,13 +63,13 @@ export const data = new SlashCommandBuilder()
   });
 
 async function shutdown(
-  rconClient: Rcon,
+  rconClient: RconClient,
   interaction: ChatInputCommandInteraction,
   seconds: number,
   reason: string,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(
+  const rconSent = await rconClient.sendCommand(
     `Shutdown ${seconds} "${reason}"`,
   );
   if (!rconSent) {
@@ -82,11 +82,11 @@ async function shutdown(
 }
 
 async function kill(
-  rconClient: Rcon,
+  rconClient: RconClient,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send("DoExit");
+  const rconSent = await rconClient.sendCommand("DoExit");
   if (!rconSent) {
     await interaction.editReply("Failed to kill server.");
     return;
@@ -95,12 +95,12 @@ async function kill(
 }
 
 async function broadcast(
-  rconClient: Rcon,
+  rconClient: RconClient,
   interaction: ChatInputCommandInteraction,
   message: string,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(
+  const rconSent = await rconClient.sendCommand(
     `Broadcast "${message}"`,
   );
   if (!rconSent) {
@@ -111,11 +111,11 @@ async function broadcast(
 }
 
 async function save(
-  rconClient: Rcon,
+  rconClient: RconClient,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(`Save`);
+  const rconSent = await rconClient.sendCommand(`Save`);
   if (!rconSent) {
     await interaction.editReply("Failed to save server.");
     return;
@@ -124,11 +124,11 @@ async function save(
 }
 
 async function info(
-  rconClient: Rcon,
+  rconClient: RconClient,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(`Info`);
+  const rconSent = await rconClient.sendCommand(`Info`);
   if (!rconSent) {
     await interaction.editReply("Failed to get server info.");
     return;
@@ -137,11 +137,11 @@ async function info(
 }
 
 async function showPlayers(
-  rconClient: Rcon,
+  rconClient: RconClient,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(`ShowPlayers`);
+  const rconSent = await rconClient.sendCommand(`ShowPlayers`);
   if (!rconSent) {
     await interaction.editReply("Failed to get players.");
     return;
@@ -150,12 +150,12 @@ async function showPlayers(
 }
 
 async function command(
-  rconClient: Rcon,
+  rconClient: RconClient,
   interaction: ChatInputCommandInteraction,
   command: string,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(command);
+  const rconSent = await rconClient.sendCommand(command);
   if (!rconSent) {
     await interaction.editReply("Failed to send command.");
     return;
@@ -167,77 +167,74 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const rconHost = process.env.RCON_HOST || "localhost";
   const rconPort = parseInt(process.env.RCON_PORT || "25575");
   const rconPassword = process.env.RCON_PASSWORD || "";
-  const rconTimeout = parseInt(process.env.RCON_TIMEOUT || "2000");
-  const rcon = await Rcon.connect({
-      host: rconHost,
-      port: rconPort, 
-      password: rconPassword,
-      timeout: rconTimeout,
-  });
+  // const rconTimeout = parseInt(process.env.RCON_TIMEOUT || "2000");
+
+  try {
+    const rconClient = await new RconClient({ip: rconHost, port: rconPort}, rconPassword).connect();
+    const subcommand = interaction.options.getSubcommand();
   
-  if (!rcon.authenticated) {
-    await interaction.reply("RCON is not connected to the server.");
+    switch (subcommand) {
+      case "shutdown": {
+        const seconds = interaction.options.getNumber("seconds");
+        const reason = interaction.options.getString("reason");
+        if (!seconds || !reason) {
+          await interaction.reply(
+            "Failed to shutdown server: Missing required arguments.",
+          );
+          return;
+        }
+        await shutdown(rconClient, interaction, seconds, reason);
+        break;
+      }
+      case "kill": {
+        await kill(rconClient, interaction);
+        break;
+      }
+      case "broadcast": {
+        const message = interaction.options.getString("message");
+        if (!message) {
+          await interaction.reply(
+            "Failed to broadcast message: Missing required arguments.",
+          );
+          return;
+        }
+        await broadcast(rconClient, interaction, message);
+        break;
+      }
+      case "save": {
+        await save(rconClient, interaction);
+        break;
+      }
+      case "info": {
+        await info(rconClient, interaction);
+        break;
+      }
+      case "showplayers": {
+        await showPlayers(rconClient, interaction);
+        break;
+      }
+      case "command": {
+        const commandData = interaction.options.getString("command");
+        if (!commandData) {
+          await interaction.reply(
+            "Failed to send command: Missing required arguments.",
+          );
+          return;
+        }
+        await command(rconClient, interaction, commandData);
+        break;
+      }
+      default: {
+        await interaction.reply("Failed to send command: Unknown subcommand.");
+        break;
+      }
+    }
+  
+    rconClient.disconnect();
+  } catch (error) {
+    console.error(error);
+    await interaction.reply("Failed to connect to RCON.");
     return;
   }
-
-  const subcommand = interaction.options.getSubcommand();
-
-  switch (subcommand) {
-    case "shutdown": {
-      const seconds = interaction.options.getNumber("seconds");
-      const reason = interaction.options.getString("reason");
-      if (!seconds || !reason) {
-        await interaction.reply(
-          "Failed to shutdown server: Missing required arguments.",
-        );
-        return;
-      }
-      await shutdown(rcon, interaction, seconds, reason);
-      break;
-    }
-    case "kill": {
-      await kill(rcon, interaction);
-      break;
-    }
-    case "broadcast": {
-      const message = interaction.options.getString("message");
-      if (!message) {
-        await interaction.reply(
-          "Failed to broadcast message: Missing required arguments.",
-        );
-        return;
-      }
-      await broadcast(rcon, interaction, message);
-      break;
-    }
-    case "save": {
-      await save(rcon, interaction);
-      break;
-    }
-    case "info": {
-      await info(rcon, interaction);
-      break;
-    }
-    case "showplayers": {
-      await showPlayers(rcon, interaction);
-      break;
-    }
-    case "command": {
-      const commandData = interaction.options.getString("command");
-      if (!commandData) {
-        await interaction.reply(
-          "Failed to send command: Missing required arguments.",
-        );
-        return;
-      }
-      await command(rcon, interaction, commandData);
-      break;
-    }
-    default: {
-      await interaction.reply("Failed to send command: Unknown subcommand.");
-      break;
-    }
-  }
-
-  await rcon.end();
+  
 }
