@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
-import { rcon } from "../../rcon";
+import { Rcon } from "rcon-client";
 
 const PREFIX_FOR_COMMANDS = "";
 
@@ -65,7 +65,7 @@ export const data = new SlashCommandBuilder()
   });
 
 async function shutdown(
-  rconClient: typeof rcon,
+  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
   seconds: number,
   reason: string,
@@ -84,7 +84,7 @@ async function shutdown(
 }
 
 async function kill(
-  rconClient: typeof rcon,
+  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
@@ -97,7 +97,7 @@ async function kill(
 }
 
 async function broadcast(
-  rconClient: typeof rcon,
+  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
   message: string,
 ) {
@@ -113,7 +113,7 @@ async function broadcast(
 }
 
 async function save(
-  rconClient: typeof rcon,
+  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
@@ -126,7 +126,7 @@ async function save(
 }
 
 async function info(
-  rconClient: typeof rcon,
+  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
@@ -139,7 +139,7 @@ async function info(
 }
 
 async function showPlayers(
-  rconClient: typeof rcon,
+  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
@@ -152,7 +152,7 @@ async function showPlayers(
 }
 
 async function command(
-  rconClient: typeof rcon,
+  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
   command: string,
 ) {
@@ -166,7 +166,11 @@ async function command(
 }
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  await rcon.connect();
+  const rconPassword = process.env.RCON_PASSWORD || "";
+  const rcon = await Rcon.connect({
+      host: "localhost", port: 25575, password: rconPassword,
+  });
+  
   if (!rcon.authenticated) {
     await interaction.reply("RCON is not connected to the server.");
     return;
