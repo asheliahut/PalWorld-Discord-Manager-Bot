@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
+import path from "node:path";
 import { Rcon } from "rcon-client";
 
 export const data = new SlashCommandBuilder()
@@ -63,13 +64,12 @@ export const data = new SlashCommandBuilder()
   });
 
 async function shutdown(
-  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
   seconds: number,
   reason: string,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(
+  const rconSent = await sendRconCommand(
     `Shutdown ${seconds} "${reason}"`,
   );
   if (!rconSent) {
@@ -82,11 +82,10 @@ async function shutdown(
 }
 
 async function kill(
-  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send("DoExit");
+  const rconSent = await sendRconCommand("DoExit");
   if (!rconSent) {
     await interaction.editReply("Failed to kill server.");
     return;
@@ -95,12 +94,11 @@ async function kill(
 }
 
 async function broadcast(
-  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
   message: string,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(
+  const rconSent = await sendRconCommand(
     `Broadcast "${message}"`,
   );
   if (!rconSent) {
@@ -111,11 +109,10 @@ async function broadcast(
 }
 
 async function save(
-  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(`Save`);
+  const rconSent = await sendRconCommand(`Save`);
   if (!rconSent) {
     await interaction.editReply("Failed to save server.");
     return;
@@ -124,11 +121,10 @@ async function save(
 }
 
 async function info(
-  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(`Info`);
+  const rconSent = await sendRconCommand(`Info`);
   if (!rconSent) {
     await interaction.editReply("Failed to get server info.");
     return;
@@ -137,11 +133,10 @@ async function info(
 }
 
 async function showPlayers(
-  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(`ShowPlayers`);
+  const rconSent = await sendRconCommand(`ShowPlayers`);
   if (!rconSent) {
     await interaction.editReply("Failed to get players.");
     return;
@@ -150,12 +145,11 @@ async function showPlayers(
 }
 
 async function command(
-  rconClient: Rcon,
   interaction: ChatInputCommandInteraction,
   command: string,
 ) {
   await interaction.deferReply();
-  const rconSent = await rconClient.send(command);
+  const rconSent = await sendRconCommand(command);
   if (!rconSent) {
     await interaction.editReply("Failed to send command.");
     return;
@@ -163,25 +157,44 @@ async function command(
   await interaction.editReply(`Success: Command sent:\n${rconSent}`);
 }
 
-export async function execute(interaction: ChatInputCommandInteraction) {
+async function sendRconCommand(command: string) {
+  const dir = import.meta.dir;
+  const arrconLocation = path.join(dir, "..", "..", "..", "ARRCON");
+
   const rconHost = process.env.RCON_HOST || "localhost";
   const rconPort = parseInt(process.env.RCON_PORT || "25575");
   const rconPassword = process.env.RCON_PASSWORD || "";
-  const rconTimeout = parseInt(process.env.RCON_TIMEOUT || "2000");
-  const rcon = await Rcon.connect({
-      host: rconHost,
-      port: rconPort, 
-      password: rconPassword,
-      timeout: rconTimeout,
-  });
-  
-  if (!rcon.authenticated) {
-    await interaction.reply("RCON is not connected to the server.");
-    return;
-  } else {
-    console.log(`RCON connected to ${rconHost}:${rconPort}`);
+
+  const proc = Bun.spawn([arrconLocation, `-H ${rconHost}`, `-P ${rconPort}`, `-p ${rconPassword}`, `${command}`])
+  const response =  await new Response(proc.stdout).text();
+  proc.kill();
+
+  let errorMessage = "";
+
+  if (!response) {
+    errorMessage = "Failed to send command.";
   }
 
+  if (response === "Unknown command") {
+    errorMessage = "Unknown command.";
+  } else if (response.includes("Incorrect Password!")) {
+    errorMessage = "Incorrect password.";
+  } else if (response.includes("Name resolution failed!")) {
+    errorMessage = "Hostname is invalid.";
+  } else if (response.includes("Connection Failed.")) {
+    errorMessage = "Connection failed possibly due to bad port.";
+  }
+
+  if (errorMessage) {
+    console.log(errorMessage);
+    return "";
+  }
+
+  return response;
+}
+
+
+export async function execute(interaction: ChatInputCommandInteraction) {
   const subcommand = interaction.options.getSubcommand();
 
   switch (subcommand) {
@@ -194,11 +207,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         );
         return;
       }
-      await shutdown(rcon, interaction, seconds, reason);
+      await shutdown(interaction, seconds, reason);
       break;
     }
     case "kill": {
-      await kill(rcon, interaction);
+      await kill(interaction);
       break;
     }
     case "broadcast": {
@@ -209,19 +222,19 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         );
         return;
       }
-      await broadcast(rcon, interaction, message);
+      await broadcast(interaction, message);
       break;
     }
     case "save": {
-      await save(rcon, interaction);
+      await save(interaction);
       break;
     }
     case "info": {
-      await info(rcon, interaction);
+      await info(interaction);
       break;
     }
     case "showplayers": {
-      await showPlayers(rcon, interaction);
+      await showPlayers(interaction);
       break;
     }
     case "command": {
@@ -232,7 +245,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         );
         return;
       }
-      await command(rcon, interaction, commandData);
+      await command(interaction, commandData);
       break;
     }
     default: {
@@ -240,6 +253,4 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       break;
     }
   }
-
-  await rcon.end();
 }
