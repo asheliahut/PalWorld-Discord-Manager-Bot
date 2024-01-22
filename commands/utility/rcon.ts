@@ -1,6 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import path from "node:path";
-import { Rcon } from "rcon-client";
 
 export const data = new SlashCommandBuilder()
   .setName("rcon")
@@ -45,7 +44,7 @@ export const data = new SlashCommandBuilder()
   })
   .addSubcommand((subcommand) => {
     return subcommand
-      .setName("players")
+      .setName("showplayers")
       .setDescription("Show all players on the server");
   })
   .addSubcommand((subcommand) => {
@@ -162,10 +161,11 @@ async function sendRconCommand(command: string) {
   const arrconLocation = path.join(dir, "..", "..", "..", "ARRCON");
 
   const rconHost = process.env.RCON_HOST || "localhost";
-  const rconPort = parseInt(process.env.RCON_PORT || "25575");
+  const rconPort = process.env.RCON_PORT || "25575";
   const rconPassword = process.env.RCON_PASSWORD || "";
 
-  const proc = Bun.spawn([arrconLocation, `-H ${rconHost}`, `-P ${rconPort}`, `-p ${rconPassword}`, `${command}`])
+  const proc = Bun.spawn([arrconLocation, "-H", rconHost, "-P", rconPort, "-p", rconPassword, `${command}`]);
+
   const response =  await new Response(proc.stdout).text();
   proc.kill();
 
@@ -175,7 +175,7 @@ async function sendRconCommand(command: string) {
     errorMessage = "Failed to send command.";
   }
 
-  if (response === "Unknown command") {
+  if (response.includes("Unknown command")) {
     errorMessage = "Unknown command.";
   } else if (response.includes("Incorrect Password!")) {
     errorMessage = "Incorrect password.";
