@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import { Rcon } from "rcon-client";
 
-const PREFIX_FOR_COMMANDS = "";
+const PREFIX_FOR_COMMANDS = "/";
 
 export const data = new SlashCommandBuilder()
   .setName("rcon")
