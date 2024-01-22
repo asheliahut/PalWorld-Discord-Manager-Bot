@@ -179,7 +179,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const subcommand = interaction.options.getSubcommand();
 
   switch (subcommand) {
-    case "Shutdown": {
+    case "shutdown": {
       const seconds = interaction.options.getNumber("seconds");
       const reason = interaction.options.getString("reason");
       if (!seconds || !reason) {
@@ -191,11 +191,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       await shutdown(rcon, interaction, seconds, reason);
       break;
     }
-    case "Kill": {
+    case "kill": {
       await kill(rcon, interaction);
       break;
     }
-    case "Broadcast": {
+    case "broadcast": {
       const message = interaction.options.getString("message");
       if (!message) {
         await interaction.reply(
@@ -206,19 +206,19 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       await broadcast(rcon, interaction, message);
       break;
     }
-    case "Save": {
+    case "save": {
       await save(rcon, interaction);
       break;
     }
-    case "Info": {
+    case "info": {
       await info(rcon, interaction);
       break;
     }
-    case "ShowPlayers": {
+    case "showplayers": {
       await showPlayers(rcon, interaction);
       break;
     }
-    case "Command": {
+    case "command": {
       const commandData = interaction.options.getString("command");
       if (!commandData) {
         await interaction.reply(
