@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "discord.js": "^14.14.1",
-    "rcon-client": "https://github.com/asheliahut/rcon-client",
-    "ts-rcon": "^1.2.1"
+    "rcon-client": "https://github.com/asheliahut/rcon-client"
   }
 }
