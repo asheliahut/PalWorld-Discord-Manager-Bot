@@ -170,7 +170,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // const rconTimeout = parseInt(process.env.RCON_TIMEOUT || "2000");
 
   try {
-    const rconClient = await new RconClient({ip: rconHost, port: rconPort}, rconPassword).connect();
+    const rcon = new RconClient({ip: rconHost, port: rconPort}, rconPassword);
+    const rconClient = await rcon.connect();
     const subcommand = interaction.options.getSubcommand();
   
     switch (subcommand) {
