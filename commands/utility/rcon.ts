@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
 import path from "node:path";
+import stripAnsi from "strip-ansi";
 
 export const data = new SlashCommandBuilder()
   .setName("rcon")
@@ -68,9 +69,7 @@ async function shutdown(
   reason: string,
 ) {
   await interaction.deferReply();
-  const rconSent = await sendRconCommand(
-    `Shutdown ${seconds} "${reason}"`,
-  );
+  const rconSent = await sendRconCommand(`Shutdown ${seconds} "${reason}"`);
   if (!rconSent) {
     await interaction.editReply("Failed to shutdown server.");
     return;
@@ -80,9 +79,7 @@ async function shutdown(
   );
 }
 
-async function kill(
-  interaction: ChatInputCommandInteraction,
-) {
+async function kill(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
   const rconSent = await sendRconCommand("DoExit");
   if (!rconSent) {
@@ -97,9 +94,7 @@ async function broadcast(
   message: string,
 ) {
   await interaction.deferReply();
-  const rconSent = await sendRconCommand(
-    `Broadcast "${message}"`,
-  );
+  const rconSent = await sendRconCommand(`Broadcast "${message}"`);
   if (!rconSent) {
     await interaction.editReply("Failed to broadcast message.");
     return;
@@ -107,9 +102,7 @@ async function broadcast(
   await interaction.editReply(`Success: Message broadcasted: ${message}`);
 }
 
-async function save(
-  interaction: ChatInputCommandInteraction,
-) {
+async function save(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
   const rconSent = await sendRconCommand(`Save`);
   if (!rconSent) {
@@ -119,9 +112,7 @@ async function save(
   await interaction.editReply("Success: Server saved.");
 }
 
-async function info(
-  interaction: ChatInputCommandInteraction,
-) {
+async function info(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
   const rconSent = await sendRconCommand(`Info`);
   if (!rconSent) {
@@ -131,9 +122,7 @@ async function info(
   await interaction.editReply(`Success: Server info:\n${rconSent}`);
 }
 
-async function showPlayers(
-  interaction: ChatInputCommandInteraction,
-) {
+async function showPlayers(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
   const rconSent = await sendRconCommand(`ShowPlayers`);
   if (!rconSent) {
@@ -164,9 +153,18 @@ async function sendRconCommand(command: string) {
   const rconPort = process.env.RCON_PORT || "25575";
   const rconPassword = process.env.RCON_PASSWORD || "";
 
-  const proc = Bun.spawn([arrconLocation, "-H", rconHost, "-P", rconPort, "-p", rconPassword, `${command}`]);
+  const proc = Bun.spawn([
+    arrconLocation,
+    "-H",
+    rconHost,
+    "-P",
+    rconPort,
+    "-p",
+    rconPassword,
+    `${command}`,
+  ]);
 
-  const response =  await new Response(proc.stdout).text();
+  const response = await new Response(proc.stdout).text();
   proc.kill();
 
   let errorMessage = "";
@@ -190,9 +188,8 @@ async function sendRconCommand(command: string) {
     return "";
   }
 
-  return response;
+  return stripAnsi(response);
 }
-
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   const subcommand = interaction.options.getSubcommand();
