@@ -188,7 +188,7 @@ async function sendRconCommand(command: string) {
     return "";
   }
 
-  return stripAnsi(response);
+  return stripAnsi(response).split("\n").slice(1).join("\n");
 }
 
 export async function execute(interaction: ChatInputCommandInteraction) {
